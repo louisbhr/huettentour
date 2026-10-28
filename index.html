@@ -155,14 +155,30 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .no { color: var(--faint); }
 .catch { color: #F3D58E; }
 .hl { color: var(--ink); font-weight: 500; }
+.cmpm { --tile: rgba(255,255,255,.045); }
+.cmpm .hdr, .cmpm .cells { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+.cmpm .hdr { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 50px); background: var(--night); padding: 8px 0 10px; z-index: 3; text-align: center; }
+.cmpm .hdr a { display: grid; place-items: center; height: 28px; border-radius: 8px; background: var(--c); color: #12201F; font-family: var(--f-display); font-stretch: 125%; font-weight: 900; font-size: 15px; text-decoration: none; }
+.cmpm .hdr span { display: block; font-size: 10.5px; color: var(--soft); margin-top: 4px; }
+.cmpm .grp { margin-top: 16px; }
+.cmpm .sect { font-family: var(--f-data); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.cmpm .lab { font-size: 12px; color: var(--faint); margin: 10px 0 4px; display: flex; justify-content: space-between; }
+.cmpm .lab small { font-family: var(--f-data); font-size: 10.5px; }
+.cmpm .cells > div { position: relative; overflow: hidden; min-width: 0; text-align: center; font-size: 13px; border-radius: 10px; padding: 9px 4px 12px; background: var(--tile); }
+.cmpm .cells > div .bar { position: absolute; left: 0; bottom: 0; height: 4px; width: calc(var(--p, 0) * 100%); background: var(--c); opacity: .85; border-radius: 0 3px 0 0; }
+.cmpm .cells > div.best { background: rgba(242,193,78,.12); }
+.cmpm .cells > div.best .n { color: var(--gold); }
+.cmpm .cells > div.best .bar { background: var(--gold); opacity: 1; }
+.cmpm .cells.t > div { text-align: left; padding: 8px 7px; border-left: 3px solid var(--c); border-radius: 4px 10px 10px 4px; }
+.cmpm .n { font-family: var(--f-display); font-stretch: 108%; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
+.cmpm .words { display: grid; gap: 3px; font-size: 12px; line-height: 1.25; overflow-wrap: break-word; }
+.cmpm .mini { display: flex; gap: 2px; align-items: end; justify-content: center; height: 24px; }
+.cmpm .mini i { width: 7px; border-radius: 2px 2px 0 0; background: var(--c); opacity: .6; }
+.cmpm .mini i.max { opacity: 1; background: var(--gold); }
+.cmpm .dots { letter-spacing: 1px; font-size: 12px; }
+.cmpm .no { color: var(--faint); }
 .cmpm { display: none; }
-.crit { border-top: 1px solid var(--line); padding-block: 14px 4px; }
-.crit h3 { margin: 0 0 10px; font-family: var(--f-data); font-weight: 500; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
-.crit dl { margin: 0; display: grid; gap: 8px; }
-.crit dl > div { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: baseline; }
-.crit dt a { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: var(--c); color: #12201F; font-family: var(--f-display); font-stretch: 125%; font-weight: 900; font-size: 14px; text-decoration: none; }
-.crit dd { margin: 0; font-size: 15px; line-height: 1.4; }
-@media (max-width: 700px) { .tbl { display: none; } .cmpm { display: block; } }
+@media (max-width: 700px) { .tbl, .rhythm { display: none; } .cmpm { display: block; } }
 @media (max-width: 860px) { .rhythm { grid-template-columns: repeat(2, minmax(0, 1fr)); } .picker { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 footer { border-top: 1px solid var(--line); }
@@ -217,7 +233,7 @@ footer .wrap { padding-block: 28px 40px; color: var(--faint); font-size: 13px; d
 <section class="compare" id="vergleich" aria-labelledby="vergleich-h">
   <div class="wrap">
     <div><p class="eyebrow">Alle vier auf einen Blick</p><h2 id="vergleich-h">Der Vergleich</h2>
-    <p class="sub">Gehzeiten pro Tag laut Komoot. Der längste Tag jeder Route ist gold umrandet.</p></div>
+    <p class="sub">Zeiten, Strecken und Höhenmeter laut Komoot-Planung. Gold markiert den längsten Tag einer Route und den Bestwert einer Zeile.</p></div>
     <div class="rhythm" id="rhythm"></div>
     <div class="tbl"><table id="cmp"></table></div>
     <div class="cmpm" id="cmpm"></div>
@@ -467,7 +483,50 @@ ROUTES.forEach(build);
     ["Ruhe", r => dots(CMP[r.k].quiet)],
     ["Der Haken", r => `<span class="catch">${CMP[r.k].catch}</span>`]
   ];
-  document.getElementById("cmpm").innerHTML = rows.map(([l, f, c]) => `<section class="crit"><h3>${l}</h3><dl>${ROUTES.map(r => `<div><dt style="--c:${getComputedStyle(document.getElementById(r.id)).getPropertyValue("--route").trim()}"><a href="#${r.id}">${r.k}</a></dt><dd${c ? ` class="${c}"` : ""}>${f(r)}</dd></div>`).join("")}</dl></section>`).join("");
+  (function mobile() {
+    const SH = {
+      A: { hl: ["Fundusfeiler", "Wettersee", "Einsamkeit"], lakes: ["Wettersee", "Karseen"], huts: ["Erlanger", "Frischmann"], catch: "Langer erster Tag" },
+      B: { hl: ["Hoher Riffler", "Blankaseen", "Durrichalpe"], lakes: ["Seßsee", "Schmalz\u00adgruben\u00adsee", "Blankaseen"], huts: ["Nieder\u00adelbe", "Edmund-Graf"], catch: "Riffler im Sommer belebt" },
+      C: { hl: ["Gufelsee", "Steinsee", "Dremel\u00adscharte"], lakes: ["Parzinnsee", "Gufelsee", "Steinsee"], huts: ["Hanauer", "Steinsee"], catch: "Kein 3000er, große Hütte" },
+      D: { hl: ["Hexensee", "Furgler", "Furglersee"], lakes: ["Hexensee", "Furglersee"], huts: ["Hexensee", "Ascher"], catch: "Wenig hm, Lifte in Sicht" }
+    };
+    const col = r => getComputedStyle(document.getElementById(r.id)).getPropertyValue("--route").trim();
+    const R = ROUTES.map(r => ({ r, c: col(r), alt: +r.stats[0][0].replace(".", ""), hm: sum(r, d => d.up), km: sum(r, d => parseFloat(d.km.replace(",", "."))),
+      tm: r.days.map(d => mins(d.h)), drive: parseFloat(r.stats[3][0].replace(",", ".")), arr: r.arrive[1], quiet: CMP[r.k].quiet, cable: CMP[r.k].cable !== "nein", sh: SH[r.k] }));
+    const MAXT = Math.max(...R.flatMap(x => x.tm));
+    const hmin = m => Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0");
+    const n = v => `<span class="n">${v}</span>`;
+    const words = a => `<div class="words">${a.map(w => `<span>${w}</span>`).join("")}</div>`;
+    const best = (f, hi = true) => { const v = R.map(f), b = hi ? Math.max(...v) : Math.min(...v); return v.map(x => x === b); };
+    const prop = f => { const mx = Math.max(...R.map(f)); return R.map(x => f(x) / mx); };
+    const ROWS = [
+      { s: "Gipfel" },
+      { l: "Höchster Gipfel", u: "m", f: x => n(fmt(x.alt)), b: best(x => x.alt), p: prop(x => x.alt) },
+      { l: "Dreitausender", f: x => x.alt >= 3000 ? `<span class="yes">✓</span>` : `<span class="no">–</span>` },
+      { s: "Anstrengung" },
+      { l: "Tage im Vergleich", f: x => { const top = Math.max(...x.tm); return `<div class="mini" style="--c:${x.c}">${x.tm.map(t => `<i class="${t === top ? "max" : ""}" style="height:${Math.round(t / MAXT * 100)}%"></i>`).join("")}</div>`; } },
+      { l: "Längster Tag", u: "h", f: x => n(hmin(Math.max(...x.tm))), p: prop(x => Math.max(...x.tm)) },
+      { l: "Gehzeit gesamt", u: "h", f: x => n(hmin(x.tm.reduce((a, b) => a + b, 0))), p: prop(x => x.tm.reduce((a, b) => a + b, 0)) },
+      { l: "Bergauf", u: "hm", f: x => n(fmt(x.hm)), b: best(x => x.hm), p: prop(x => x.hm) },
+      { l: "Strecke", u: "km", f: x => n(Math.round(x.km)), p: prop(x => x.km) },
+      { s: "Drumherum" },
+      { l: "Anfahrt", u: "h", f: x => n(String(x.drive).replace(".", ",")), b: best(x => x.drive, false), p: prop(x => x.drive) },
+      { l: "Anreise", f: x => x.arr ? `<span class="yes">Wandertag</span>` : "Vorabend" },
+      { l: "Bergbahn", f: x => x.cable ? "✓" : `<span class="no">–</span>` },
+      { l: "Ruhe", f: x => `<span class="dots">${"●".repeat(x.quiet)}${"○".repeat(3 - x.quiet)}</span>`, b: best(x => x.quiet), p: prop(x => x.quiet) },
+      { s: "Was einen erwartet" },
+      { l: "Highlights", t: 1, f: x => words(x.sh.hl) },
+      { l: "Seen", t: 1, f: x => words(x.sh.lakes) },
+      { l: "Hütten", t: 1, f: x => words(x.sh.huts) },
+      { l: "Der Haken", t: 1, f: x => `<div class="words catch">${x.sh.catch}</div>` }
+    ];
+    let html = `<div class="hdr">${R.map(x => `<div style="--c:${x.c}"><a href="#${x.r.id}">${x.r.k}</a><span>${x.r.title.split(":")[0]}</span></div>`).join("")}</div>`, open = false;
+    ROWS.forEach(row => {
+      if (row.s) { html += (open ? "</div>" : "") + `<div class="grp"><div class="sect">${row.s}</div>`; open = true; return; }
+      html += `<div class="lab"><span>${row.l}</span>${row.u ? `<small>${row.u}</small>` : ""}</div><div class="cells${row.t ? " t" : ""}">${R.map((x, i) => `<div class="${row.b && row.b[i] ? "best" : ""}" style="--c:${x.c}${row.p ? `;--p:${row.p[i].toFixed(3)}` : ""}">${row.f(x)}${row.p ? '<span class="bar"></span>' : ""}</div>`).join("")}</div>`;
+    });
+    document.getElementById("cmpm").innerHTML = html + "</div>";
+  })();
   document.getElementById("cmp").innerHTML = `<thead><tr><th scope="col"><span class="visually-hidden"></span></th>${ROUTES.map(r => `<th scope="col"><a href="#${r.id}" style="text-decoration:none"><b>${r.k}</b>${r.title.split(":")[0]}</a></th>`).join("")}</tr></thead><tbody>${rows.map(([l, f, c]) => `<tr><th scope="row">${l}</th>${ROUTES.map(r => `<td${c ? ` class="${c}"` : ""}>${f(r)}</td>`).join("")}</tr>`).join("")}</tbody>`;
 })();
 
